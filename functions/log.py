@@ -22,10 +22,8 @@ class Log:
 
     def lot(self, calc_lot, able_lot, trade_log, backtest_log):
         trade_log.append("現在のアカウント残高は{}円です\n".format(backtest_log["funds"]))
-        trade_log.append(
-            "許容リスクから購入できる枚数は最大{}BTCまでです\n".format(calc_lot))
-        trade_log.append(
-            "証拠金から購入できる枚数は最大{}BTCまでです\n".format(able_lot))
+        trade_log.append("許容リスクから購入できる枚数は最大{}BTCまでです\n".format(calc_lot))
+        trade_log.append("証拠金から購入できる枚数は最大{}BTCまでです\n".format(able_lot))
         return trade_log
 
 
@@ -53,14 +51,12 @@ class Log:
 
 
     def close_buy_position(self, trade_log):
-        log = "成行注文を出して「買い」のポジションを決済します\n"
-        trade_log.append(log)
+        trade_log.append("成行注文を出して「買い」のポジションを決済します\n")
         return trade_log
 
 
     def close_sell_position(self, trade_log):
-        log = "成行注文を出して「売り」のポジションを決済します\n"
-        trade_log.append(log)
+        trade_log.append("成行注文を出して「売り」のポジションを決済します\n")
         return trade_log
 
 
@@ -75,32 +71,29 @@ class Log:
 
 
     def slippage_cost(self, trade_cost, trade_log):
-        log = "スリッページ・手数料として" + str(trade_cost) + "円を考慮します\n"
-        trade_log.append(log)
+        trade_log.append("スリッページ・手数料として" + str(trade_cost) + "円を考慮します\n")
         return trade_log
 
 
-    def profit(self, entry_price, exit_price, trade_cost, trade_log):
+    def buy_profit(self, entry_price, exit_price, trade_cost, trade_log):
         buy_profit = exit_price - entry_price - trade_cost
-        sell_profit = entry_price - exit_price - trade_cost
 
         if buy_profit > 0:
-            log = str(abs(buy_profit)) + "円の利益です\n"
-            trade_log.append(log)
-            return trade_log
+            trade_log.append(str(abs(buy_profit)) + "円の利益です\n")
         else:
-            log = str(abs(buy_profit)) + "円の損失です\n"
-            trade_log.append(log)
-            return trade_log
+            trade_log.append(str(abs(buy_profit)) + "円の損失です\n")
+
+        return trade_log
+
+    def sell_profit(self, entry_price, exit_price, trade_cost, trade_log):
+        sell_profit = entry_price - exit_price - trade_cost
 
         if sell_profit > 0:
-            log = str(abs(sell_profit)) + "円の利益です\n"
-            trade_log.append(log)
-            return trade_log
+            trade_log.append(str(abs(sell_profit)) + "円の利益です\n")
         else:
-            log = str(abs(sell_profit)) + "円の損失です\n"
-            trade_log.append(log)
-            return trade_log
+            trade_log.append(str(abs(sell_profit)) + "円の損失です\n")
+
+        return trade_log
 
 
 
