@@ -144,15 +144,16 @@ while i < len(price):
             #処理
             entry_price, exit_price = calculate.entry_exit_price(data["close_price"], position_info)
             trade_cost = calculate.cost(exit_price)
+            buy_position_profit = calculate.buy_position_profit(entry_price, exit_price, trade_cost)
 
             #ログ
             trade_log = log.loss_cut(real_stop_price, trade_log)
             trade_log = log.close_buy_position(trade_log)
             trade_log = log.slippage_cost(trade_cost, trade_log)
-            trade_log = log.profit(entry_price, exit_price, trade_cost, trade_log)
+            trade_log = log.buy_position_profit(buy_position_profit, trade_log)
 
             #バックテスト・ポジションの記録
-            backtest_log = log.records(entry_price, exit_price, trade_cost, data, position_info, backtest_log, close_type="STOP")
+            backtest_log = log.buy_position_close_records(entry_price, trade_cost, buy_position_profit, data, position_info, backtest_log, close_type="STOP")
             position_info = record.close_position(position_info)
 
         #損切りを既にしていたら
@@ -169,6 +170,8 @@ while i < len(price):
                 #処理
                 entry_price, exit_price = calculate.entry_exit_price(data["close_price"], position_info)
                 trade_cost = calculate.cost(exit_price)
+                buy_position_profit = calculate.buy_position_profit(entry_price, exit_price, trade_cost)
+
                 #ドテンを行うためにロットを計算
                 stop = calculate.stop(last_data)
                 lot, calc_lot, able_lot = calculate.lot(last_data, data, backtest_log)
@@ -177,13 +180,13 @@ while i < len(price):
                 trade_log = log.sell_breakout(signal, data, trade_log)
                 trade_log = log.close_buy_position(trade_log)
                 trade_log = log.slippage_cost(trade_cost, trade_log)
-                trade_log = log.profit(entry_price, exit_price, trade_cost, trade_log)
+                trade_log = log.buy_position_profit(buy_position_profit, trade_log)
                 trade_log = log.lot(calc_lot, able_lot, trade_log, backtest_log)
 
                 #バックテスト・ポジションの記録
-                backtest_log = log.records(entry_price, exit_price, trade_cost, data, position_info, backtest_log, close_type=None)
+                backtest_log = log.buy_position_close_records(entry_price, trade_cost, buy_position_profit, data, position_info, backtest_log, close_type=None)
                 position_info = record.close_position(position_info)
-                
+
 
                 if judge.isLotEnough(lot):
 
@@ -195,7 +198,7 @@ while i < len(price):
                     #ログ系
                     trade_log = log.sell_limit(data, trade_log)
                     trade_log = log.sell_stop_line(stop, data, trade_log)
-                    
+
                 else:
                     print("注文可能枚数{}が、最低注文単位に満たなかったので注文を見送ります".format(lot))
 
@@ -212,15 +215,16 @@ while i < len(price):
             #処理
             entry_price, exit_price = calculate.entry_exit_price(data["close_price"], position_info)
             trade_cost = calculate.cost(exit_price)
-            
+            sell_position_profit = calculate.sell_position_profit(entry_price, exit_price, trade_cost)
+
             #ログ
             trade_log = log.loss_cut(real_stop_price, trade_log)
             trade_log = log.close_sell_position(trade_log)
             trade_log = log.slippage_cost(trade_cost, trade_log)
-            trade_log = log.profit(entry_price, exit_price, trade_cost, trade_log)
+            trade_log = log.sell_position_profit(sell_position_profit, trade_log)
 
             #バックテスト・ポジションの記録
-            backtest_log = log.records(entry_price, exit_price, trade_cost, data, position_info, backtest_log, close_type="STOP")
+            backtest_log = log.sell_position_close_records(entry_price, trade_cost, sell_position_profit, data, position_info, backtest_log, close_type="STOP")
             position_info = record.close_position(position_info)
 
         #損切りを既にしていたら
@@ -228,7 +232,7 @@ while i < len(price):
             pass
         else:
             position_info = record.keep_count(position_info)
-            
+
             signal = strategy.donchan(data, last_data)
 
             if judge.isBull(signal):
@@ -238,21 +242,22 @@ while i < len(price):
                 #処理
                 entry_price, exit_price = calculate.entry_exit_price(data["close_price"], position_info)
                 trade_cost = calculate.cost(exit_price)
+                sell_position_profit = calculate.sell_position_profit(entry_price, exit_price, trade_cost)
+
                 #ドテンを行うためにロットを計算
                 stop = calculate.stop(last_data)
                 lot, calc_lot, able_lot = calculate.lot(last_data, data, backtest_log)
-                
+
                 #ログ
                 trade_log = log.buy_breakout(signal, data, trade_log)
                 trade_log = log.close_sell_position(trade_log)
                 trade_log = log.slippage_cost(trade_cost, trade_log)
-                trade_log = log.profit(entry_price, exit_price, trade_cost, trade_log)
+                trade_log = log.sell_position_profit(sell_position_profit, trade_log)
                 trade_log = log.lot(calc_lot, able_lot, trade_log, backtest_log)
 
                 #バックテスト・ポジションの記録
-                backtest_log = log.records(entry_price, exit_price, trade_cost, data, position_info, backtest_log, close_type=None)
+                backtest_log = log.sell_position_close_records(entry_price, trade_cost, sell_position_profit, data, position_info, backtest_log, close_type=None)
                 position_info = record.close_position(position_info)
-                
 
                 if judge.isLotEnough(lot):
 
@@ -260,7 +265,7 @@ while i < len(price):
 
                     #オーダーの記録
                     order_info = record.get_buy_order(lot, stop, data, order_info)
-                    
+
                     #ログ
                     trade_log = log.buy_limit(data, trade_log)
                     trade_log = log.buy_stop_line(stop, data, trade_log)
@@ -286,7 +291,7 @@ while i < len(price):
 
                 #オーダーの記録
                 order_info = record.get_buy_order(lot, stop, data, order_info)
-                
+
                 #ログ
                 trade_log = log.buy_limit(data, trade_log)
                 trade_log = log.buy_stop_line(stop, data, trade_log)
@@ -303,19 +308,19 @@ while i < len(price):
             #ログ
             trade_log = log.sell_breakout(signal, data, trade_log)
             trade_log = log.lot(calc_lot, able_lot, trade_log, backtest_log)
-            
+
             if judge.isLotEnough(lot):
 
                 #売り注文
 
                 #オーダーの記録
                 order_info = record.get_sell_order(lot, stop, data, order_info)
-                
+
                 #ログ
                 trade_log = log.sell_limit(data, trade_log)
                 trade_log = log.sell_stop_line(stop, data, trade_log)
 
-                
+
             else:
                 print("注文可能枚数{}が、最低注文単位に満たなかったので注文を見送ります".format(lot))
 

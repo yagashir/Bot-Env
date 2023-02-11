@@ -42,7 +42,7 @@ class Record:
     def get_buy_order(self, lot, stop, data, order_info):
         order_info["exist"] = True
         order_info["lot"] = lot
-        order_info["stop"] = stop     
+        order_info["stop"] = stop
         order_info["side"] = "BUY"
         order_info["price"] = data["close_price"]
         return order_info
@@ -53,11 +53,8 @@ class Record:
     def get_sell_order(self, lot, stop, data, order_info):
         order_info["exist"] = True
         order_info["lot"] = lot
-        order_info["stop"] = stop     
+        order_info["stop"] = stop
         order_info["side"] = "SELL"
         order_info["price"] = data["close_price"]
         return order_info
 
-
-
-    
