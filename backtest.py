@@ -207,6 +207,9 @@ while i < len(price):
                 else:
                     print("注文可能枚数{}が、最低注文単位に満たなかったので注文を見送ります".format(lot))
 
+            else:
+                
+
 
     #売りのポジションを持っているなら
     elif judge.isSellPosition(position_info):

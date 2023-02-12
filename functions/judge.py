@@ -11,6 +11,20 @@ class Judge:
         else:
             return False
 
+    #引数　position_info : ポジション情報
+    #返り値　True : ポジションを持つ　False : 持たない
+    def isPosition(self, position_info):
+        if position_info["exist"]:
+            return True
+        else:
+            return False
+
+    def isFirstPosition(self, add_position_info):
+        if add_position_info["count"] == 0:
+            return True
+        else:
+            return False
+
 
     #引数　signal : 売買のシグナル（Buy or Sell）
     #返り値　True : 売る　False : 売らない
@@ -31,7 +45,7 @@ class Judge:
 
 
     def check_order(self):
-        
+
         # 注文状況を確認して通っていたら(今後実装) True
         return True
 
@@ -53,7 +67,7 @@ class Judge:
         else:
             False
 
-    
+
     #引数　position_info : ポジション（保有）状況
     #返り値　True : 買いのポジションを持っている　False : 買いのポジションを持っていない
     def isBuyPosition(self, position_info):
@@ -62,7 +76,7 @@ class Judge:
         else:
             return False
 
-        
+
     #引数　position_info : ポジション（保有）状況
     #返り値　True : 売りのポジションを持っている　False : 売りのポジションを持っていない
     def isSellPosition(self, position_records):
@@ -80,7 +94,7 @@ class Judge:
         else:
             return False
 
-    
+
     #引数　data : 最新のOHLC, stop_price : 損切りの価格
     #返り値　True : 売りのポジションで損切りを実施する False : 損切りを実施しない
     def isSellPosLossCut(self, data, stop_price):
