@@ -9,6 +9,8 @@ class Calculate:
         self.trade_risk = 0.001
         self.leverage = 3
         self.slippage = 0.01
+        self.entry_times = 2
+        self.entry_range = 0.5
 
 
     def volatility(self, last_data):
@@ -24,24 +26,39 @@ class Calculate:
         return stop
 
 
-    def lot(self, last_data, data, backtest_log):
-        lot = 0
-        # 口座残高を取得する（バックテスト用）
+    def balance(self, position_info, backtest_log):
         balance = backtest_log["funds"]
+        balance = round(balance - position_info["price"] * position_info["lot"] / self.leverage)
+        return balance
 
 
+    def first_lot_etc(self, balance, last_data, backtest_log):
+        volatility = self.volatility(last_data)
+        stop = self.stop_range * volatility
+        calc_lot = np.floor(balance * self.trade_risk / stop * 100) / 100
+        unit_size = np.floor(calc_lot / self.entry_times * 100) / 100
+        unit_range = round(volatility * self.entry_range)
+        return calc_lot, unit_size, unit_range, stop, self.entry_times
+
+
+    def lot(self, balance, last_data, data, add_position_info, backtest_log):
         # 1期間のボラティリティを基準にストップ位置を計算する
-        stop = self.stop(last_data)
+        stop = add_position_info["stop"]
 
         # 注文可能なロット数を計算する
-        calc_lot = np.floor(balance * self.trade_risk / stop * 100) / 100
         able_lot = np.floor(balance * self.leverage / data["close_price"] * 100) / 100
-        lot = min(calc_lot, able_lot)
-        return lot, calc_lot, able_lot
+        lot = min(able_lot, add_position_info["unit-size"])
+        return lot, able_lot, stop
 
 
-    def buy_stop_price(self, position_records):
-        stop_price = position_records["price"] - position_records["stop"]
+    def added_entry_price(self, first_entry_price, unit_range, add_position_info):
+        entry_price = first_entry_price + (add_position_info["count"] * unit_range)
+        entry_price = (1 + self.slippage) * entry_price
+        return entry_price
+
+
+    def buy_stop_price(self, position_info):
+        stop_price = position_info["price"] - position_info["stop"]
         return stop_price
 
 
@@ -50,8 +67,8 @@ class Calculate:
         return real_stop_price
 
 
-    def sell_stop_price(self, position_records):
-        stop_price = position_records["price"] + position_records["stop"]
+    def sell_stop_price(self, position_info):
+        stop_price = position_info["price"] + position_info["stop"]
         return stop_price
 
 

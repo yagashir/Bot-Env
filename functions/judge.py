@@ -1,26 +1,12 @@
 class Judge:
     def __init__(self):
-        pass
+        self.entry_times = 0
 
 
     #引数　order_info : 注文状況（未約定）
     #返り値　True : 未約定の注文が存在する False : 存在しない
     def isOrder(self, order_info):
         if order_info["exist"]:
-            return True
-        else:
-            return False
-
-    #引数　position_info : ポジション情報
-    #返り値　True : ポジションを持つ　False : 持たない
-    def isPosition(self, position_info):
-        if position_info["exist"]:
-            return True
-        else:
-            return False
-
-    def isFirstPosition(self, add_position_info):
-        if add_position_info["count"] == 0:
             return True
         else:
             return False
@@ -99,6 +85,37 @@ class Judge:
     #返り値　True : 売りのポジションで損切りを実施する False : 損切りを実施しない
     def isSellPosLossCut(self, data, stop_price):
         if data["high_price"] > stop_price:
+            return True
+        else:
+            return False
+
+
+    #引数　position_info : ポジション情報
+    #返り値　True : ポジションを持つ　False : 持たない
+    def isPosition(self, position_info):
+        if position_info["exist"]:
+            return True
+        else:
+            return False
+
+    def isFirstPosition(self, add_position_info):
+        if add_position_info["count"] == 0:
+            return True
+        else:
+            return False
+
+
+    def isOverPosition(self, add_position_info):
+        if add_position_info["count"] >= self.entry_times:
+            return True
+        else:
+            return False
+
+
+    def shouldAddPosition(self, current_position, current_price, last_entry_price, unit_range):
+        if current_position == "BUY" and (current_price - last_entry_price) > unit_range:
+            return True
+        elif current_position == "SELL" and (last_entry_price - current_price) > unit_range:
             return True
         else:
             return False

@@ -6,6 +6,7 @@ class Log:
         self.slippage = 0.01
         self.buy_term = 30
         self.sell_term = 30
+        self.entry_times = 2
 
 
     def price(self, data, trade_log):
@@ -24,6 +25,18 @@ class Log:
         trade_log.append("現在のアカウント残高は{}円です\n".format(backtest_log["funds"]))
         trade_log.append("許容リスクから購入できる枚数は最大{}BTCまでです\n".format(calc_lot))
         trade_log.append("証拠金から購入できる枚数は最大{}BTCまでです\n".format(able_lot))
+        return trade_log
+
+
+    def first_lot(self, calc_lot, entry_times, unit_size, trade_log, backtest_log):
+        trade_log.append("現在のアカウント残高は{}円です\n".format(backtest_log["funds"]))
+        trade_log.append("許容リスクから購入できる枚数は最大{}BTCまでです\n".format(calc_lot))
+        trade_log.append("{0}回に分けて{1}BTCずつ注文します".format(entry_times, unit_size))
+        return trade_log
+
+
+    def pass_lot(self, lot, trade_log):
+        trade_log.append("注文可能枚数{}が、最低注文単位に満たなかったので注文を見送ります\n".format(lot))
         return trade_log
 
 
@@ -60,13 +73,13 @@ class Log:
         return trade_log
 
 
-    def buy_stop_line(self, stop, data, trade_log):
-        trade_log.append("{0}円にストップを入れます\n".format(data["close_price"] - stop))
+    def buy_stop_line(self, stop, price, trade_log):
+        trade_log.append("{0}円にストップを入れます\n".format(price - stop))
         return trade_log
 
 
-    def sell_stop_line(self, stop, data, trade_log):
-        trade_log.append("{0}円にストップを入れます\n".format(data["close_price"] + stop))
+    def sell_stop_line(self, stop, price, trade_log):
+        trade_log.append("{0}円にストップを入れます\n".format(price + stop))
         return trade_log
 
 
@@ -85,7 +98,7 @@ class Log:
 
 
     # 各トレードのパフォーマンスを記録する関数
-    def position_closing(self, position, entry_price, trade_cost, profit, data, position_info, backtest_log, close_type=None):
+    def position_closing(self, current_position, entry_price, trade_cost, profit, data, position_info, backtest_log, close_type=None):
         # 手仕舞った日時と保有期間の記録
         backtest_log["date"].append(data["close_time_dt"])
         backtest_log["holding-periods"].append(position_info["count"])
@@ -100,9 +113,22 @@ class Log:
             backtest_log["stop-count"].append(0)
 
         # 利益の記録
-        backtest_log["side"].append(position)
+        backtest_log["side"].append(current_position)
         backtest_log["profit"].append(profit)
         backtest_log["return"].append(round(profit / entry_price * 100, 4))
         backtest_log["funds"] += profit
 
         return backtest_log
+
+
+    def move_unit_range(self, last_entry_price, unit_range, add_position_info, trade_log):
+        trade_log.append("\n前回のエントリー価格{0}円からブレイクアウトの方向に{1}ATR（{2}円）以上動きました\n".format(last_entry_price, entry_range, round(unit_range)))
+        trade_log.append("{0}/{1}回目の追加注文を出します\n".format(add_position_info["count"] + 1, self.entry_times))
+        return trade_log
+
+
+    def current_position_information(self, position_info, trade_log):
+        trade_log.append("現在のポジションの取得単価は{}円です\n".format(position_info["price"]))
+        trade_log.append("現在のポジションサイズは{}BTCです\n\n".format(position_info["lot"]))
+        return trade_log
+

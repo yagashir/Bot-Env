@@ -45,6 +45,15 @@ position_info = {
     "count": 0
 }
 
+add_position_info = {
+    "count": 0,
+    "first-entry-price": 0,
+    "last-entry-price": 0,
+    "unit-range": 0,
+    "unit-size": 0,
+    "stop": 0
+}
+
 backtest_log = {
     "date": [],
     "profit": [],
@@ -92,9 +101,13 @@ calculate.stop_range = config["stop_range"]
 calculate.trade_risk = config["trade_risk"]
 calculate.leverage = config["leverage"]
 calculate.slippage = config["slippage"]
+calculate.entry_times = config["entry_times"]
+calculate.entry_range = config["entry_range"]
+judge.entry_times = config["entry_times"]
 log.buy_term = config["buy_term"]
 log.sell_term = config["sell_term"]
 log.slippage = config["slippage"]
+log.entry_times = config["entry_times"]
 
 
 # 出力インスタンス生成
@@ -106,10 +119,10 @@ output.start_funds = config["start_funds"]
 
 # チャートを取得
 # APIを叩いてチャート取得するなら
-price = input.get_price()
+# price = input.get_price()
 
 #過去のデータを使うなら
-# price = input.get_price_from_file()
+price = input.get_price_from_file()
 
 last_data = []
 i = 0
@@ -178,8 +191,10 @@ while i < len(price):
                 buy_position_profit = calculate.buy_position_profit(entry_price, exit_price, trade_cost)
 
                 #ドテンを行うためにロットを計算
-                stop = calculate.stop(last_data)
-                lot, calc_lot, able_lot = calculate.lot(last_data, data, backtest_log)
+                balance = backtest_log["funds"]
+                calc_lot, unit_size, unit_range, stop, entry_times= calculate.first_lot_etc(balance, last_data, backtest_log)
+                add_position_info = record.first_add_position_update(unit_size, unit_range, stop, add_position_info)
+                lot, able_lot, stop = calculate.lot(balance, last_data, data, add_position_info, backtest_log)
 
                 #ログ
                 trade_log = log.sell_breakout(signal, data, trade_log)
@@ -202,13 +217,61 @@ while i < len(price):
 
                     #ログ系
                     trade_log = log.sell_limit(data, trade_log)
-                    trade_log = log.sell_stop_line(stop, data, trade_log)
-
+                    trade_log = log.sell_stop_line(stop, data["close_price"], trade_log)
                 else:
                     print("注文可能枚数{}が、最低注文単位に満たなかったので注文を見送ります".format(lot))
 
-            else:
-                
+            if judge.isPosition(position_info):
+                #最初のエントリーの場合
+                if judge.isFirstPosition(add_position_info):
+                    add_position_info = record.first_entry(position_info, add_position_info)
+
+                while True:
+                    if judge.isOverPosition(add_position_info):
+                        break
+                    else:
+                        first_entry_price = add_position_info["first-entry-price"]
+                        last_entry_price = add_position_info["last-entry-price"]
+                        unit_range = add_position_info["unit-range"]
+                        current_price = data["close_price"]
+
+                        should_add_position = False
+                        if judge.shouldAddPosition("BUY", current_price, last_entry_price, unit_range):
+                            should_add_position = True
+                        else:
+                            break
+
+                        if should_add_position:
+                            if judge.isFirstPosition(add_position_info):
+                                balance = backtest_log["funds"]
+                                calc_lot, unit_size, unit_range, stop, entry_times= calculate.first_lot_etc(balance, last_data, backtest_log)
+                                add_position_info = record.first_add_position_update(unit_size, unit_range, stop, add_position_info)
+                                lot, able_lot, stop = calculate.lot(balance, last_data, data, add_position_info, backtest_log)
+                                #ログ系
+                                trade_log = log.first_lot(calc_lot, entry_times, unit_size, trade_log, backtest_log)
+                            else:
+                                balance = calculate.balance(position_info, backtest_log)
+                                lot, able_lot, stop = calculate.lot(balance, last_data, add_position_info, backtest_log)
+
+                            if judge.isLotEnough(lot):
+                                add_position_info = record.add_position_count(add_position_info)
+                                #ログ
+                                trade_log = log.pass_lot(lot, trade_log)
+                                break
+
+                            #追加注文
+                            entry_price = calculate.added_entry_price(first_entry_price, unit_range, add_position_info)
+
+                            #ポジション全体の情報を更新する
+                            position_info, add_position_info = record.add_position_update(stop, entry_price, lot, position_info)
+
+                            #ログ系
+                            trade_log = log.lot(able_lot, trade_log, backtest_log)
+                            trade_log = log.move_unit_range(last_entry_price, unit_range, add_position_info, trade_log)
+                            trade_log = log.buy_stop_line(stop, position_info["price"])
+                            trade_log = log.current_position_information(position_info, trade_log)
+
+
 
 
     #売りのポジションを持っているなら
@@ -257,8 +320,10 @@ while i < len(price):
                 sell_position_profit = calculate.sell_position_profit(entry_price, exit_price, trade_cost)
 
                 #ドテンを行うためにロットを計算
-                stop = calculate.stop(last_data)
-                lot, calc_lot, able_lot = calculate.lot(last_data, data, backtest_log)
+                balance = backtest_log["funds"]
+                calc_lot, unit_size, unit_range, stop, entry_times= calculate.first_lot_etc(balance, last_data, backtest_log)
+                add_position_info = record.first_add_position_update(unit_size, unit_range, stop, add_position_info)
+                lot, able_lot, stop = calculate.lot(balance, last_data, data, add_position_info, backtest_log)
 
                 #ログ
                 trade_log = log.buy_breakout(signal, data, trade_log)
@@ -281,10 +346,63 @@ while i < len(price):
 
                     #ログ
                     trade_log = log.buy_limit(data, trade_log)
-                    trade_log = log.buy_stop_line(stop, data, trade_log)
+                    trade_log = log.buy_stop_line(stop, data["close_price"], trade_log)
 
                 else:
                     print("注文可能枚数{}が、最低注文単位に満たなかったので注文を見送ります".format(lot))
+
+            if judge.isPosition(position_info):
+                #最初のエントリーの場合
+                if judge.isFirstPosition(add_position_info):
+                    add_position_info = record.first_entry(position_info, add_position_info)
+
+                while True:
+                    if judge.isOverPosition(add_position_info):
+                        break
+                    else:
+                        first_entry_price = add_position_info["first-entry-price"]
+                        last_entry_price = add_position_info["last-entry-price"]
+                        unit_range = add_position_info["unit-range"]
+                        current_price = data["close_price"]
+
+                        should_add_position = False
+                        if judge.shouldAddPosition("SELL", current_price, last_entry_price, unit_range):
+                            should_add_position = True
+                        else:
+                            break
+
+                        if should_add_position:
+                            if judge.isFirstPosition(add_position_info):
+                                #初回におけるロットの計算処理
+                                balance = backtest_log["funds"]
+                                calc_lot, unit_size, unit_range, stop, entry_times= calculate.first_lot_etc(balance, last_data, backtest_log)
+                                add_position_info = record.first_add_position_update(unit_size, unit_range, stop, add_position_info)
+                                lot, able_lot, stop = calculate.lot(balance, last_data, data, add_position_info, backtest_log)
+                                #ログ系
+                                trade_log = log.first_lot(calc_lot, entry_times, unit_size, trade_log, backtest_log)
+                            else:
+                                #初回以降のロットの計算処理
+                                balance = calculate.balance(position_info, backtest_log)
+                                lot, able_lot, stop = calculate.lot(balance, last_data, add_position_info, backtest_log)
+
+                            #ロットが足りない場合
+                            if judge.isLotEnough(lot):
+                                add_position_info = record.add_position_count(add_position_info)
+                                #ログ
+                                trade_log = log.pass_lot(lot, trade_log)
+                                break
+
+                            #追加注文
+                            entry_price = calculate.added_entry_price(first_entry_price, unit_range, add_position_info)
+
+                            #ポジション全体の情報を更新する
+                            position_info, add_position_info = record.add_position_update(stop, entry_price, lot, position_info)
+
+                            #ログ系
+                            trade_log = log.lot(able_lot, trade_log, backtest_log)
+                            trade_log = log.move_unit_range(last_entry_price, unit_range, add_position_info, trade_log)
+                            trade_log = log.sell_stop_line(stop, position_info["price"])
+                            trade_log = log.current_position_information(position_info, trade_log)
 
     else:
         """
@@ -297,10 +415,12 @@ while i < len(price):
 
         if judge.isBull(signal):
             #処理
-            stop = calculate.stop(last_data)
-            lot, calc_lot, able_lot = calculate.lot(last_data, data, backtest_log)
+            balance = backtest_log["funds"]
+            calc_lot, unit_size, unit_range, stop, entry_times= calculate.first_lot_etc(balance, last_data, backtest_log)
+            add_position_info = record.first_add_position_update(unit_size, unit_range, stop, add_position_info)
+            lot, able_lot, stop = calculate.lot(balance, last_data, data, add_position_info, backtest_log)
 
-            #ログ
+            #ログ系
             trade_log = log.buy_breakout(signal, data, trade_log)
             trade_log = log.lot(calc_lot, able_lot, trade_log, backtest_log)
 
@@ -313,7 +433,7 @@ while i < len(price):
 
                 #ログ
                 trade_log = log.buy_limit(data, trade_log)
-                trade_log = log.buy_stop_line(stop, data, trade_log)
+                trade_log = log.buy_stop_line(stop, data["close_price"], trade_log)
 
             else:
                 print("注文可能枚数{}が、最低注文単位に満たなかったので注文を見送ります".format(lot))
@@ -321,8 +441,10 @@ while i < len(price):
 
         if judge.isBear(signal):
             #処理
-            stop = calculate.stop(last_data)
-            lot, calc_lot, able_lot = calculate.lot(last_data, data, backtest_log)
+            balance = backtest_log["funds"]
+            calc_lot, unit_size, unit_range, stop, entry_times= calculate.first_lot_etc(balance, last_data, backtest_log)
+            add_position_info = record.first_add_position_update(unit_size, unit_range, stop, add_position_info)
+            lot, able_lot, stop = calculate.lot(balance, last_data, data, add_position_info, backtest_log)
 
             #ログ
             trade_log = log.sell_breakout(signal, data, trade_log)
@@ -337,7 +459,7 @@ while i < len(price):
 
                 #ログ
                 trade_log = log.sell_limit(data, trade_log)
-                trade_log = log.sell_stop_line(stop, data, trade_log)
+                trade_log = log.sell_stop_line(stop, data["close_price"], trade_log)
 
             else:
                 print("注文可能枚数{}が、最低注文単位に満たなかったので注文を見送ります".format(lot))

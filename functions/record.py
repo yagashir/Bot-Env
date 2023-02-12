@@ -1,3 +1,4 @@
+import numpy as np
 from datetime import datetime
 
 
@@ -29,6 +30,10 @@ class Record:
         position_info["count"] += 1
         return position_info
 
+    def add_position_count(self, add_position_info):
+        add_position_info["count"] += 1
+        return add_position_info
+
 
     #ポジション状況の更新
     def close_position(self, position_info):
@@ -57,4 +62,26 @@ class Record:
         order_info["side"] = "SELL"
         order_info["price"] = data["close_price"]
         return order_info
+
+    def first_entry(self, position_info, add_position_info):
+        add_position_info["first-entry-price"] = position_info["price"]
+        add_position_info["last-entry-price"] = position_info["price"]
+        add_position_info["count"] += 1
+        return add_position_info
+
+
+    def first_add_position_update(self, unit_size, unit_range, stop, add_position_info):
+        add_position_info["unit-size"] = unit_size
+        add_position_info["unit-range"] = unit_range
+        add_position_info["stop"] = stop
+        return add_position_info
+
+
+    def add_position_update(self, stop, entry_price, lot, position_info, add_position_info):
+        position_info["stop"] = stop
+        position_info["price"] = int(round((position_info["price"] * position_info["lot"] + entry_price * lot) / (position_info["lot"] + lot)))
+        position_info["lot"] = np.round((position_info["lot"] + lot) * 100) / 100
+        add_position_info["count"] += 1
+        add_position_info["last_entry_price"] = entry_price
+        return position_info, add_position_info
 
