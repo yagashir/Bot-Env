@@ -35,8 +35,7 @@ class Calculate:
 
         # 注文可能なロット数を計算する
         calc_lot = np.floor(balance * self.trade_risk / stop * 100) / 100
-        able_lot = np.floor(balance * self.leverage /
-                            data["close_price"] * 100) / 100
+        able_lot = np.floor(balance * self.leverage / data["close_price"] * 100) / 100
         lot = min(calc_lot, able_lot)
         return lot, calc_lot, able_lot
 

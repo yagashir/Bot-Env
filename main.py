@@ -150,10 +150,10 @@ while i < len(price):
             trade_log = log.loss_cut(real_stop_price, trade_log)
             trade_log = log.close_buy_position(trade_log)
             trade_log = log.slippage_cost(trade_cost, trade_log)
-            trade_log = log.buy_position_profit(buy_position_profit, trade_log)
+            trade_log = log.profit(buy_position_profit, trade_log)
 
             #バックテスト・ポジションの記録
-            backtest_log = log.buy_position_close_records(entry_price, trade_cost, buy_position_profit, data, position_info, backtest_log, close_type="STOP")
+            backtest_log = log.position_closing("BUY", entry_price, trade_cost, buy_position_profit, data, position_info, backtest_log, close_type="STOP")
             position_info = record.close_position(position_info)
 
         #損切りを既にしていたら
@@ -180,11 +180,11 @@ while i < len(price):
                 trade_log = log.sell_breakout(signal, data, trade_log)
                 trade_log = log.close_buy_position(trade_log)
                 trade_log = log.slippage_cost(trade_cost, trade_log)
-                trade_log = log.buy_position_profit(buy_position_profit, trade_log)
+                trade_log = log.profit(buy_position_profit, trade_log)
                 trade_log = log.lot(calc_lot, able_lot, trade_log, backtest_log)
 
                 #バックテスト・ポジションの記録
-                backtest_log = log.buy_position_close_records(entry_price, trade_cost, buy_position_profit, data, position_info, backtest_log, close_type=None)
+                backtest_log = log.position_closing("BUY", entry_price, trade_cost, buy_position_profit, data, position_info, backtest_log, close_type=None)
                 position_info = record.close_position(position_info)
 
 
@@ -221,10 +221,10 @@ while i < len(price):
             trade_log = log.loss_cut(real_stop_price, trade_log)
             trade_log = log.close_sell_position(trade_log)
             trade_log = log.slippage_cost(trade_cost, trade_log)
-            trade_log = log.sell_position_profit(sell_position_profit, trade_log)
+            trade_log = log.profit(sell_position_profit, trade_log)
 
             #バックテスト・ポジションの記録
-            backtest_log = log.sell_position_close_records(entry_price, trade_cost, sell_position_profit, data, position_info, backtest_log, close_type="STOP")
+            backtest_log = log.position_closing("SELL", entry_price, trade_cost, sell_position_profit, data, position_info, backtest_log, close_type="STOP")
             position_info = record.close_position(position_info)
 
         #損切りを既にしていたら
@@ -252,11 +252,11 @@ while i < len(price):
                 trade_log = log.buy_breakout(signal, data, trade_log)
                 trade_log = log.close_sell_position(trade_log)
                 trade_log = log.slippage_cost(trade_cost, trade_log)
-                trade_log = log.sell_position_profit(sell_position_profit, trade_log)
+                trade_log = log.profit(sell_position_profit, trade_log)
                 trade_log = log.lot(calc_lot, able_lot, trade_log, backtest_log)
 
                 #バックテスト・ポジションの記録
-                backtest_log = log.sell_position_close_records(entry_price, trade_cost, sell_position_profit, data, position_info, backtest_log, close_type=None)
+                backtest_log = log.position_closing("SELL", entry_price, trade_cost, sell_position_profit, data, position_info, backtest_log, close_type=None)
                 position_info = record.close_position(position_info)
 
                 if judge.isLotEnough(lot):

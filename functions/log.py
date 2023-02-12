@@ -75,54 +75,17 @@ class Log:
         return trade_log
 
 
-    def buy_profit(self, entry_price, exit_price, trade_cost, trade_log):
-        buy_profit = exit_price - entry_price - trade_cost
-
-        if buy_profit > 0:
-            trade_log.append(str(abs(buy_profit)) + "円の利益です\n")
+    def profit(self, profit, trade_log):
+        if profit > 0:
+            trade_log.append(str(abs(profit)) + "円の利益です\n")
         else:
-            trade_log.append(str(abs(buy_profit)) + "円の損失です\n")
+            trade_log.append(str(abs(profit)) + "円の損失です\n")
 
         return trade_log
-    
-
-    def sell_profit(self, entry_price, exit_price, trade_cost, trade_log):
-        sell_profit = entry_price - exit_price - trade_cost
-
-        if sell_profit > 0:
-            trade_log.append(str(abs(sell_profit)) + "円の利益です\n")
-        else:
-            trade_log.append(str(abs(sell_profit)) + "円の損失です\n")
-
-        return trade_log
-
-
-    def buy_position_close_records(self, entry_price, trade_cost, buy_position_profit, data, position_info, backtest_log, close_type=None):
-        # 手仕舞った日時と保有期間の記録
-        backtest_log["date"].append(data["close_time_dt"])
-        backtest_log["holding-periods"].append(position_info["count"])
-
-        #取引手数料の計算
-        backtest_log["slippage"].append(trade_cost)
-
-        # 損切にかかった回数をカウント
-        if close_type == "STOP":
-            backtest_log["stop-count"].append(1)
-        else:
-            backtest_log["stop-count"].append(0)
-
-        # 利益の記録
-        backtest_log["side"].append("BUY")
-        backtest_log["profit"].append(buy_position_profit)
-        backtest_log["return"].append(round(buy_position_profit / entry_price * 100, 4))
-        backtest_log["funds"] += buy_position_profit
-
-        return backtest_log
 
 
     # 各トレードのパフォーマンスを記録する関数
-    def sell_position_close_records(self, entry_price, trade_cost, sell_position_profit, data, position_info, backtest_log, close_type=None):
-
+    def position_closing(self, position, entry_price, trade_cost, profit, data, position_info, backtest_log, close_type=None):
         # 手仕舞った日時と保有期間の記録
         backtest_log["date"].append(data["close_time_dt"])
         backtest_log["holding-periods"].append(position_info["count"])
@@ -137,9 +100,9 @@ class Log:
             backtest_log["stop-count"].append(0)
 
         # 利益の記録
-        backtest_log["side"].append("SELL")
-        backtest_log["profit"].append(sell_position_profit)
-        backtest_log["return"].append(round(sell_position_profit / entry_price * 100, 4))
-        backtest_log["funds"] += sell_position_profit
+        backtest_log["side"].append(position)
+        backtest_log["profit"].append(profit)
+        backtest_log["return"].append(round(profit / entry_price * 100, 4))
+        backtest_log["funds"] += profit
 
         return backtest_log
